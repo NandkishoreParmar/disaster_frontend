@@ -76,7 +76,7 @@ function App() {
 
   // Initialize socket connection
   useEffect(() => {
-    const socketConnection = io("http://localhost:3001");
+    const socketConnection = io("https://disaster-backend-6h90.onrender.com");
     setSocket(socketConnection);
 
     socketConnection.on("connect", () => {
@@ -118,7 +118,7 @@ function App() {
   const loadDisasters = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/disasters", {
+      const response = await fetch("https://disaster-backend-6h90.onrender.com/api/disasters", {
         headers: {
           "X-User-ID": "netrunnerX",
         },
@@ -140,7 +140,7 @@ function App() {
     try {
       // Load social media data
       const socialResponse = await fetch(
-        `http://localhost:3001/api/social-media/${disasterId}/social-media`,
+        `https://disaster-backend-6h90.onrender.com/api/social-media/${disasterId}/social-media`,
         {
           headers: { "X-User-ID": "netrunnerX" },
         }
@@ -150,7 +150,7 @@ function App() {
 
       // Load resources
       const resourcesResponse = await fetch(
-        `http://localhost:3001/api/resources/${disasterId}/resources`,
+        `https://disaster-backend-6h90.onrender.com/api/resources/${disasterId}/resources`,
         {
           headers: { "X-User-ID": "netrunnerX" },
         }
@@ -161,7 +161,7 @@ function App() {
 
       // Load official updates
       const updatesResponse = await fetch(
-        `http://localhost:3001/api/updates/${disasterId}/official-updates`,
+        `https://disaster-backend-6h90.onrender.com/api/updates/${disasterId}/official-updates`,
         {
           headers: { "X-User-ID": "netrunnerX" },
         }
@@ -176,7 +176,7 @@ function App() {
   const createDisaster = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:3001/api/disasters", {
+      const response = await fetch("https://disaster-backend-6h90.onrender.com/api/disasters", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
