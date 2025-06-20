@@ -73,7 +73,11 @@ function App() {
     description: "",
     tags: "",
   });
-
+  const [editingDisaster, setEditingDisaster] = useState<Disaster | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+useEffect(() => {
+  console.log("Edit form state:", showEditForm, editingDisaster);
+}, [showEditForm, editingDisaster]);
   // Initialize socket connection
   useEffect(() => {
     const socketConnection = io("https://disaster-backend-6h90.onrender.com");
@@ -115,14 +119,80 @@ function App() {
     loadDisasters();
   }, []);
 
+  // This handles opening the edit form with pre-filled data
+  const handleEditClick = (disaster: Disaster) => {
+    setEditingDisaster(disaster);
+    setShowEditForm(true);
+  };
+
+  // This handles the actual form submission
+  const editDisaster = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDisaster) return;
+
+    try {
+      const response = await fetch(
+        `https://disaster-backend-6h90.onrender.com/api/disasters/${editingDisaster.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-ID": "netrunnerX",
+          },
+          body: JSON.stringify({
+            title: editingDisaster.title,
+            location_name: editingDisaster.location_name,
+            description: editingDisaster.description,
+            tags: editingDisaster.tags,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setShowEditForm(false);
+        setEditingDisaster(null);
+        loadDisasters();
+      }
+    } catch (error) {
+      console.error("Error updating disaster:", error);
+    }
+  };
+
+  const deleteDisaster = async (disasterId: string) => {
+    if (window.confirm("Are you sure you want to delete this disaster?")) {
+      try {
+        const response = await fetch(
+          `https://disaster-backend-6h90.onrender.com/api/disasters/${disasterId}`,
+          {
+            method: "DELETE",
+            headers: {
+              "X-User-ID": "netrunnerX",
+            },
+          }
+        );
+
+        if (response.ok) {
+          loadDisasters();
+          if (selectedDisaster === disasterId) {
+            setSelectedDisaster(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error deleting disaster:", error);
+      }
+    }
+  };
   const loadDisasters = async () => {
     setLoading(true);
     try {
-      const response = await fetch("https://disaster-backend-6h90.onrender.com/api/disasters", {
-        headers: {
-          "X-User-ID": "netrunnerX",
-        },
-      });
+      const response = await fetch(
+        "https://disaster-backend-6h90.onrender.com/api/disasters",
+        {
+          headers: {
+            "X-User-ID": "netrunnerX",
+          },
+        }
+      );
       const data = await response.json();
       setDisasters(data);
     } catch (error) {
@@ -176,20 +246,23 @@ function App() {
   const createDisaster = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://disaster-backend-6h90.onrender.com/api/disasters", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-ID": "netrunnerX",
-        },
-        body: JSON.stringify({
-          ...newDisaster,
-          tags: newDisaster.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean),
-        }),
-      });
+      const response = await fetch(
+        "https://disaster-backend-6h90.onrender.com/api/disasters",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-ID": "netrunnerX",
+          },
+          body: JSON.stringify({
+            ...newDisaster,
+            tags: newDisaster.tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean),
+          }),
+        }
+      );
 
       if (response.ok) {
         setNewDisaster({
@@ -315,16 +388,33 @@ function App() {
                                   {tag}
                                 </span>
                               ))}
+                              <div className="flex space-x-2"></div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {new Date(
-                                disaster.created_at
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 mt-4 gap-4">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {new Date(disaster.created_at).toLocaleDateString()}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(disaster); // Use the new handler
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteDisaster(disaster.id);
+                            }}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -606,7 +696,110 @@ function App() {
           </div>
         </div>
       )}
+       {showEditForm && editingDisaster && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-1000">  
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Edit Disaster
+                    </h3>
+                  </div>
+                  <form onSubmit={editDisaster} className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={editingDisaster.title}
+                        onChange={(e) =>
+                          setEditingDisaster({
+                            ...editingDisaster,
+                            title: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location
+                      </label>
+                      <input
+                        type="text"
+                        value={editingDisaster.location_name}
+                        onChange={(e) =>
+                          setEditingDisaster({
+                            ...editingDisaster,
+                            location_name: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={editingDisaster.description}
+                        onChange={(e) =>
+                          setEditingDisaster({
+                            ...editingDisaster,
+                            description: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tags (comma separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingDisaster.tags.join(", ")}
+                        onChange={(e) =>
+                          setEditingDisaster({
+                            ...editingDisaster,
+                            tags: e.target.value
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter(Boolean),
+                          })
+                        }
+                        placeholder="flood, emergency, urgent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditForm(false);
+                          setEditingDisaster(null);
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                      >
+                        Update Disaster
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
     </div>
+    
   );
 }
 
